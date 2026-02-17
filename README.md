@@ -1,8 +1,7 @@
-# Aim-bot-SURREAL-FOR-RADIANT
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "Latina Hub | FFFexecutes",
+    Name = "Aim bot Hub",
     Icon = 18700831375,
     LoadingTitle = "auto",
     LoadingSubtitle = "by fffexecutes/glaze.me",
@@ -21,7 +20,7 @@ local Window = Rayfield:CreateWindow({
         Invite = "rB8kG7RPmf",
         RememberJoins = true
     },
-    KeySystem = true,
+    KeySystem = false,
     KeySettings = {
         Title = "Key System",
         Subtitle = "Enter Your Key",
@@ -29,7 +28,7 @@ local Window = Rayfield:CreateWindow({
         FileName = "supersecretwowoworayfieldnice",
         SaveKey = false,
         GrabKeyFromSite = true,
-        Key = "https://pastebin.com/raw/U3be7LD8"
+        Key = "123"
     }
 })
 
