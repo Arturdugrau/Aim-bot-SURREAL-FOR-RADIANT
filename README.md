@@ -1,1 +1,676 @@
 # Aim-bot-SURREAL-FOR-RADIANT
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "AIMPRECISION Hub | FFFexecutes",
+    Icon = 18700831375,
+    LoadingTitle = "auto",
+    LoadingSubtitle = "by fffexecutes/glaze.me",
+    ShowText = "Latina Hub",
+    Theme = "Default",
+    ToggleUIKeybind = "K",
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "scripttt1123",
+        FileName = "Config"
+    },
+  
+})
+
+local ESPTab = Window:CreateTab("ESP", 4483362458)
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
+local GunTab = Window:CreateTab("Gun Spawn", 4483362455)
+local MovementTab = Window:CreateTab("Movement", 4483362458)
+local TeleportTab = Window:CreateTab("Teleports", 4483362458)
+
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+
+-- // ESP
+_G.ESP_Enabled = false
+_G.ESP_Box = false
+_G.ESP_Name = false
+_G.ESP_Health = false
+_G.ESP_Tool = false
+_G.ESP_Chams = false
+_G.Teamcheck = false
+
+local ESP = {
+    Drawings = {},
+    Chams = {}
+}
+
+function ESP:IsEnemy(player)
+    if player == Players.LocalPlayer then return false end
+    if not _G.Teamcheck then return true end
+    return player.Team ~= Players.LocalPlayer.Team
+end
+
+function ESP:ClearChams(player)
+    if self.Chams[player] then
+        for _, sg in ipairs(self.Chams[player]) do
+            if sg and sg:IsA("SurfaceGui") then sg:Destroy() end
+        end
+        self.Chams[player] = nil
+    end
+end
+
+function ESP:ApplyChams(player)
+    self:ClearChams(player)
+    if not _G.ESP_Chams or not _G.ESP_Enabled or not self:IsEnemy(player) then return end
+    local char = player.Character
+    if not (char and char:IsDescendantOf(workspace)) then return end
+    local parts = {}
+    for _, part in ipairs(char:GetChildren()) do
+        if part:IsA("MeshPart") or part.Name == "Head" then table.insert(parts, part) end
+    end
+    self.Chams[player] = {}
+    for _, part in ipairs(parts) do
+        for _, face in ipairs({"Front","Back","Top","Bottom","Left","Right"}) do
+            local sg = Instance.new("SurfaceGui")
+            sg.Face = Enum.NormalId[face]
+            sg.AlwaysOnTop = true
+            sg.LightInfluence = 0
+            sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            sg.ResetOnSpawn = false
+            sg.Parent = part
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(1, 0, 1, 0)
+            frame.BackgroundTransparency = 0.15
+            frame.BackgroundColor3 = Color3.fromRGB(181, 126, 220)
+            frame.BorderSizePixel = 0
+            frame.Parent = sg
+            table.insert(self.Chams[player], sg)
+        end
+    end
+end
+
+function ESP:ClearDrawings(player)
+    local d = self.Drawings[player]
+    if d then
+        for _, v in pairs(d) do
+            if typeof(v) == "table" then
+                for _, obj in pairs(v) do if obj.Remove then obj:Remove() end end
+            elseif v and v.Remove then v:Remove() end
+        end
+        self.Drawings[player] = nil
+    end
+end
+
+function ESP:SetupPlayer(player)
+    local function setupCharacter(char)
+        char:WaitForChild("HumanoidRootPart", 3)
+        char:WaitForChild("Head", 3)
+        task.wait(0.1)
+        ESP:Clear(player)
+        ESP:CreateDrawings(player)
+        ESP:ApplyChams(player)
+    end
+    if player.Character then setupCharacter(player.Character) end
+    player.CharacterAdded:Connect(setupCharacter)
+end
+
+function ESP:CreateDrawings(player)
+    self:ClearDrawings(player)
+    local d = {
+        Box = {
+            TL = Drawing.new("Line"), TR = Drawing.new("Line"),
+            BR = Drawing.new("Line"), BL = Drawing.new("Line")
+        },
+        Name = Drawing.new("Text"),
+        Health = Drawing.new("Text"),
+        Tool = Drawing.new("Text")
+    }
+    for _, line in pairs(d.Box) do
+        line.Thickness = 1
+        line.Color = Color3.fromRGB(180, 180, 180)
+        line.Transparency = 1
+        line.Visible = false
+    end
+    for _, text in ipairs({d.Name, d.Health, d.Tool}) do
+        text.Color = Color3.fromRGB(210, 210, 210)
+        text.Size = 14
+        text.Center = true
+        text.Outline = true
+        text.Visible = false
+    end
+    self.Drawings[player] = d
+end
+
+function ESP:Clear(player)
+    self:ClearDrawings(player)
+    self:ClearChams(player)
+end
+
+function ESP:Update()
+    for _, player in ipairs(Players:GetPlayers()) do
+        local isEnemy = self:IsEnemy(player)
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local head = char and char:FindFirstChild("Head")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local d = self.Drawings[player]
+        if d and isEnemy and char and hrp and head and hum and hum.Health > 0 then
+            local rootPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            local headPos = Camera:WorldToViewportPoint(head.Position)
+            local bottomPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+            local height = headPos.Y - bottomPos.Y
+            local width = height / 2.2
+            local tl = Vector2.new(rootPos.X - width / 2, headPos.Y)
+            local tr = Vector2.new(rootPos.X + width / 2, headPos.Y)
+            local bl = Vector2.new(rootPos.X - width / 2, bottomPos.Y)
+            local br = Vector2.new(rootPos.X + width / 2, bottomPos.Y)
+            d.Box.TL.From, d.Box.TL.To = tl, tr
+            d.Box.TR.From, d.Box.TR.To = tr, br
+            d.Box.BR.From, d.Box.BR.To = br, bl
+            d.Box.BL.From, d.Box.BL.To = bl, tl
+            for _, line in pairs(d.Box) do line.Visible = _G.ESP_Enabled and _G.ESP_Box and onScreen end
+            d.Name.Text = player.Name
+            d.Name.Position = Vector2.new(rootPos.X, tl.Y - 14)
+            d.Name.Visible = _G.ESP_Enabled and _G.ESP_Name and onScreen
+            d.Health.Text = "HP: " .. math.floor(hum.Health)
+            d.Health.Position = Vector2.new(rootPos.X, br.Y + 2)
+            d.Health.Visible = _G.ESP_Enabled and _G.ESP_Health and onScreen
+            local tool = char:FindFirstChildOfClass("Tool")
+            if tool then
+                d.Tool.Text = "Tool: " .. tool.Name
+                d.Tool.Position = Vector2.new(rootPos.X, br.Y + 18)
+                d.Tool.Visible = _G.ESP_Enabled and _G.ESP_Tool and onScreen
+            else
+                d.Tool.Visible = false
+            end
+        elseif d then
+            for _, line in pairs(d.Box) do line.Visible = false end
+            d.Name.Visible = false
+            d.Health.Visible = false
+            d.Tool.Visible = false
+        end
+        if self.Chams[player] then
+            local shouldShow = _G.ESP_Enabled and _G.ESP_Chams and self:IsEnemy(player)
+            for _, sg in ipairs(self.Chams[player]) do
+                if sg and sg:IsA("SurfaceGui") then sg.Enabled = shouldShow end
+            end
+        end
+    end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do if p ~= Players.LocalPlayer then ESP:SetupPlayer(p) end end
+Players.PlayerAdded:Connect(function(p) if p ~= Players.LocalPlayer then ESP:SetupPlayer(p) end end)
+Players.PlayerRemoving:Connect(function(p) ESP:Clear(p) end)
+
+RunService.RenderStepped:Connect(function()
+    if _G.ESP_Enabled then ESP:Update() end
+end)
+
+ESPTab:CreateToggle({Name="Enable ESP",CurrentValue=false,Callback=function(v) _G.ESP_Enabled=v end})
+ESPTab:CreateToggle({Name="Boxes",CurrentValue=false,Callback=function(v) _G.ESP_Box=v end})
+ESPTab:CreateToggle({Name="Names",CurrentValue=false,Callback=function(v) _G.ESP_Name=v end})
+ESPTab:CreateToggle({Name="Health",CurrentValue=false,Callback=function(v) _G.ESP_Health=v end})
+ESPTab:CreateToggle({Name="Tools",CurrentValue=false,Callback=function(v) _G.ESP_Tool=v end})
+ESPTab:CreateToggle({Name="Chams",CurrentValue=false,Callback=function(v) _G.ESP_Chams=v end})
+ESPTab:CreateToggle({Name="Team Check",CurrentValue=false,Callback=function(v) _G.Teamcheck=v end})
+
+-- // Player Features
+local function UpdatePlayerProperties()
+    if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        local humanoid = Player.Character:FindFirstChildOfClass("Humanoid")
+        humanoid.WalkSpeed = _G.WalkSpeed or 16
+        humanoid.JumpPower = _G.JumpPower or 50
+    end
+end
+
+_G.WalkSpeed = 16
+_G.JumpPower = 50
+
+Player.CharacterAdded:Connect(UpdatePlayerProperties)
+
+PlayerTab:CreateSlider({
+    Name = "Walk Speed",
+    Range = {16, 100},
+    Increment = 1,
+    CurrentValue = 16,
+    Flag = "WalkSpeed",
+    Callback = function(Value)
+        _G.WalkSpeed = Value
+        UpdatePlayerProperties()
+    end,
+})
+
+PlayerTab:CreateSlider({
+    Name = "Jump Power",
+    Range = {50, 200},
+    Increment = 1,
+    CurrentValue = 50,
+    Flag = "JumpPower",
+    Callback = function(Value)
+        _G.JumpPower = Value
+        UpdatePlayerProperties()
+    end,
+})
+
+-- // Aimbot
+local Aimbot = {
+    Enabled = false,
+    TeamCheck = false,
+    AimPart = "Head",
+    Sensitivity = 0.5,
+    Smoothness = 0.5,
+    UseSensitivity = true,
+    UseSmoothness = true,
+    FOV = 100,
+    Target = nil,
+    FOVCircle = Drawing.new("Circle")
+}
+
+Aimbot.FOVCircle.Radius = Aimbot.FOV
+Aimbot.FOVCircle.Thickness = 1
+Aimbot.FOVCircle.Color = Color3.fromRGB(255, 255, 255)
+Aimbot.FOVCircle.Visible = false
+Aimbot.FOVCircle.Filled = false
+Aimbot.FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+
+local function GetAimPart(character, aimPart)
+    if aimPart == "Head" then
+        return character:FindFirstChild("Head")
+    elseif aimPart == "Torso" then
+        return character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso") or character:FindFirstChild("HumanoidRootPart")
+    elseif aimPart == "HumanoidRootPart" then
+        return character:FindFirstChild("HumanoidRootPart")
+    end
+    return nil
+end
+
+local function GetClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = Aimbot.FOV
+    local mousePos = UserInputService:GetMouseLocation()
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Player and player.Character and player.Character:FindFirstChildOfClass("Humanoid") and player.Character.Humanoid.Health > 0 then
+            if Aimbot.TeamCheck and player.Team == Player.Team then continue end
+            local aimPart = GetAimPart(player.Character, Aimbot.AimPart)
+            if aimPart then
+                local partPos = Camera:WorldToViewportPoint(aimPart.Position)
+                local distance = (Vector2.new(partPos.X, partPos.Y) - mousePos).Magnitude
+                if distance < shortestDistance and partPos.Z > 0 then
+                    closestPlayer = player
+                    shortestDistance = distance
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+RunService.RenderStepped:Connect(function()
+    if Aimbot.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        Aimbot.Target = GetClosestPlayer()
+        if Aimbot.Target then
+            local aimPart = GetAimPart(Aimbot.Target.Character, Aimbot.AimPart)
+            if aimPart then
+                local targetPos = Camera:WorldToViewportPoint(aimPart.Position)
+                local mousePos = UserInputService:GetMouseLocation()
+                if Aimbot.UseSmoothness and Aimbot.UseSensitivity then
+                    local newPos = mousePos + (Vector2.new(targetPos.X, targetPos.Y) - mousePos) * Aimbot.Smoothness
+                    mousemoverel((newPos.X - mousePos.X) * Aimbot.Sensitivity, (newPos.Y - mousePos.Y) * Aimbot.Sensitivity)
+                else
+                    mousemoverel(targetPos.X - mousePos.X, targetPos.Y - mousePos.Y)
+                end
+            end
+        end
+    else
+        Aimbot.Target = nil
+    end
+    Aimbot.FOVCircle.Visible = Aimbot.Enabled
+end)
+
+AimbotTab:CreateToggle({
+    Name = "Enable Aimbot",
+    CurrentValue = false,
+    Flag = "AimbotEnabled",
+    Callback = function(Value)
+        Aimbot.Enabled = Value
+    end,
+})
+
+AimbotTab:CreateToggle({
+    Name = "Team Check",
+    CurrentValue = false,
+    Flag = "AimbotTeamCheck",
+    Callback = function(Value)
+        Aimbot.TeamCheck = Value
+    end,
+})
+
+AimbotTab:CreateToggle({
+    Name = "Use Sensitivity",
+    CurrentValue = true,
+    Flag = "AimbotUseSensitivity",
+    Callback = function(Value)
+        Aimbot.UseSensitivity = Value
+    end,
+})
+
+AimbotTab:CreateToggle({
+    Name = "Use Smoothness",
+    CurrentValue = true,
+    Flag = "AimbotUseSmoothness",
+    Callback = function(Value)
+        Aimbot.UseSmoothness = Value
+    end,
+})
+
+AimbotTab:CreateDropdown({
+    Name = "Aim Part",
+    Options = {"Head", "Torso", "HumanoidRootPart"},
+    CurrentOption = "Head",
+    Flag = "AimbotAimPart",
+    Callback = function(Value)
+        Aimbot.AimPart = Value
+    end,
+})
+
+AimbotTab:CreateSlider({
+    Name = "Sensitivity",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = 0.5,
+    Flag = "AimbotSensitivity",
+    Callback = function(Value)
+        Aimbot.Sensitivity = Value
+    end,
+})
+
+AimbotTab:CreateSlider({
+    Name = "FOV",
+    Range = {10, 500},
+    Increment = 10,
+    CurrentValue = 100,
+    Flag = "AimbotFOV",
+    Callback = function(Value)
+        Aimbot.FOV = Value
+        Aimbot.FOVCircle.Radius = Value
+    end,
+})
+
+AimbotTab:CreateSlider({
+    Name = "Smoothness",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = 0.5,
+    Flag = "AimbotSmoothness",
+    Callback = function(Value)
+        Aimbot.Smoothness = Value
+    end,
+})
+
+-- // Gun Spawn
+local grabtoolsFunc
+
+local function notify(message, color)
+    Rayfield:Notify({
+        Title = "Gun Spawn",
+        Content = message,
+        Duration = 3,
+        Image = 4483362458,
+        Actions = {},
+    })
+end
+
+local function enableGrabTools()
+    local humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        notify("Waiting for character to load...", Color3.fromRGB(255, 255, 0))
+        return
+    end
+    -- Equip existing tools
+    for _, child in ipairs(workspace:GetChildren()) do
+        if child:IsA("BackpackItem") and child:FindFirstChild("Handle") then
+            humanoid:EquipTool(child)
+        end
+    end
+    if grabtoolsFunc then grabtoolsFunc:Disconnect() end
+    grabtoolsFunc = workspace.ChildAdded:Connect(function(child)
+        local humanoid = Player.Character and Player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid and child:IsA("BackpackItem") and child:FindFirstChild("Handle") then
+            task.spawn(function()
+                for i = 1, 5 do -- Retry up to 5 times
+                    task.wait(0.2)
+                    if humanoid:EquipTool(child) then
+                        notify("Equipped tool: " .. child.Name, Color3.fromRGB(0, 255, 0))
+                        break
+                    end
+                end
+            end)
+        end
+    end)
+    notify("Grabtools enabled! Picking up any dropped tools", Color3.fromRGB(0, 255, 0))
+end
+
+Player.CharacterAdded:Connect(function()
+    task.spawn(function()
+        for i = 1, 5 do -- Retry up to 5 times
+            task.wait(0.5) -- Wait for character to fully load
+            if Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+                enableGrabTools()
+                break
+            end
+        end
+    end)
+end)
+
+GunTab:CreateButton({
+    Name = "Activate Gun Spawn",
+    Callback = function()
+        enableGrabTools()
+    end,
+})
+
+-- // Movement Features (Fly and Noclip)
+local Fly = {
+    Enabled = false,
+    Speed = 50
+}
+
+local Noclip = {
+    Enabled = false,
+    Connection = nil
+}
+
+local function enableFly()
+    if not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = Player.Character.HumanoidRootPart
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = hrp
+    Fly.BodyVelocity = bodyVelocity
+
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.P = 10000
+    bodyGyro.D = 1000
+    bodyGyro.Parent = hrp
+    Fly.BodyGyro = bodyGyro
+
+    RunService:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value + 1, function()
+        if not Fly.Enabled or not Player.Character or not Player.Character:FindFirstChild("HumanoidRootPart") then return end
+        local cam = workspace.CurrentCamera
+        local moveDirection = Vector3.new()
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveDirection = moveDirection + cam.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveDirection = moveDirection - cam.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveDirection = moveDirection - cam.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveDirection = moveDirection + cam.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveDirection = moveDirection + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            moveDirection = moveDirection - Vector3.new(0, 1, 0)
+        end
+        bodyVelocity.Velocity = moveDirection * Fly.Speed
+        bodyGyro.CFrame = cam.CFrame
+    end)
+end
+
+local function disableFly()
+    if Fly.BodyVelocity then Fly.BodyVelocity:Destroy() end
+    if Fly.BodyGyro then Fly.BodyGyro:Destroy() end
+    RunService:UnbindFromRenderStep("Fly")
+    Fly.BodyVelocity = nil
+    Fly.BodyGyro = nil
+end
+
+local function enableNoclip()
+    if Noclip.Connection then return end
+    Noclip.Connection = RunService.Stepped:Connect(function()
+        if not Noclip.Enabled or not Player.Character then return end
+        for _, part in ipairs(Player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end)
+end
+
+local function disableNoclip()
+    if Noclip.Connection then
+        Noclip.Connection:Disconnect()
+        Noclip.Connection = nil
+    end
+end
+
+MovementTab:CreateToggle({
+    Name = "Fly",
+    CurrentValue = false,
+    Flag = "FlyToggle",
+    Callback = function(Value)
+        Fly.Enabled = Value
+        if Value then
+            enableFly()
+        else
+            disableFly()
+        end
+    end,
+})
+
+MovementTab:CreateSlider({
+    Name = "Fly Speed",
+    Range = {10, 200},
+    Increment = 1,
+    CurrentValue = 50,
+    Flag = "FlySpeed",
+    Callback = function(Value)
+        Fly.Speed = Value
+    end,
+})
+
+MovementTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
+    Callback = function(Value)
+        Noclip.Enabled = Value
+        if Value then
+            enableNoclip()
+        else
+            disableNoclip()
+        end
+    end,
+})
+
+-- // Teleport Features
+local TeleportLocations = {
+    {Name = "Apartments 1", Position = Vector3.new(5, 2, 56)},
+    {Name = "Apartments 2", Position = Vector3.new(730, 5, 202)},
+    {Name = "Bank Vault", Position = Vector3.new(-40880.859375, 3.550363540649414, -407.64154052734375)},
+    {Name = "Barber", Position = Vector3.new(129, 2, 160)},
+    {Name = "Box Job", Position = Vector3.new(-111, 4, 160)},
+    {Name = "Clothes Box Job", Position = Vector3.new(-43, 5, 28)},
+    {Name = "Dealership", Position = Vector3.new(790, 5, -8)},
+    {Name = "Father and Sons", Position = Vector3.new(66, 4, -322)},
+    {Name = "Gun Shop", Position = Vector3.new(-245, 4, 39)},
+    {Name = "Ice Box", Position = Vector3.new(59, 1, -229)},
+    {Name = "333 Gang", Position = Vector3.new(-198, 5, -443)},
+    {Name = "ABM Gang", Position = Vector3.new(575, 20, 47)},
+    {Name = "AFNF Gang", Position = Vector3.new(217, 5, 130)},
+    {Name = "Afro Family", Position = Vector3.new(818, 20, -755)},
+    {Name = "AOD Gang", Position = Vector3.new(11, 5, 501)},
+    {Name = "CTG Gang", Position = Vector3.new(325, 7, 79)},
+    {Name = "DF Gang", Position = Vector3.new(860, 6, 504)},
+    {Name = "FSG Gang", Position = Vector3.new(210, 20, -376)},
+    {Name = "HS Gang", Position = Vector3.new(-198, 20, 371)},
+    {Name = "KOS Gang", Position = Vector3.new(-499, 4, 106)},
+    {Name = "LACC Gang", Position = Vector3.new(-181, 4, -765)},
+    {Name = "OFB Gang", Position = Vector3.new(-247, 5, -346)},
+    {Name = "OT7 Gang", Position = Vector3.new(590, 7, 223)},
+    {Name = "PG Gang", Position = Vector3.new(413, 6, 496)},
+    {Name = "PKM Gang", Position = Vector3.new(221, 21, -228)},
+    {Name = "RGD Gang", Position = Vector3.new(560, 7, 25)},
+    {Name = "TPL Gang", Position = Vector3.new(323, 7, 233)}
+}
+
+local function teleportTo(position)
+    if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
+        Player.Character.HumanoidRootPart.CFrame = CFrame.new(position)
+        notify("Teleported to " .. tostring(position), Color3.fromRGB(0, 255, 0))
+    else
+        notify("Character not found!", Color3.fromRGB(255, 0, 0))
+    end
+end
+
+TeleportTab:CreateDropdown({
+    Name = "Teleport Locations",
+    Options = {
+        "Apartments 1",
+        "Apartments 2",
+        "Bank Vault",
+        "Barber",
+        "Box Job",
+        "Clothes Box Job",
+        "Dealership",
+        "Father and Sons",
+        "Gun Shop",
+        "Ice Box",
+        "333 Gang",
+        "ABM Gang",
+        "AFNF Gang",
+        "Afro Family",
+        "AOD Gang",
+        "CTG Gang",
+        "DF Gang",
+        "FSG Gang",
+        "HS Gang",
+        "KOS Gang",
+        "LACC Gang",
+        "OFB Gang",
+        "OT7 Gang",
+        "PG Gang",
+        "PKM Gang",
+        "RGD Gang",
+        "TPL Gang"
+    },
+    CurrentOption = "Apartments 1",
+    Flag = "TeleportLocation",
+    Callback = function(Value)
+        for _, location in ipairs(TeleportLocations) do
+            if location.Name == Value then
+                teleportTo(location.Position)
+                break
+            end
+        end
+    end,
+})
