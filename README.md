@@ -2,7 +2,7 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "AIMPRECISION Hub | FFFexecutes",
+    Name = "Latina Hub | FFFexecutes",
     Icon = 18700831375,
     LoadingTitle = "auto",
     LoadingSubtitle = "by fffexecutes/glaze.me",
@@ -16,7 +16,21 @@ local Window = Rayfield:CreateWindow({
         FolderName = "scripttt1123",
         FileName = "Config"
     },
-  
+    Discord = {
+        Enabled = true,
+        Invite = "rB8kG7RPmf",
+        RememberJoins = true
+    },
+    KeySystem = true,
+    KeySettings = {
+        Title = "Key System",
+        Subtitle = "Enter Your Key",
+        Note = "Get the key from our Discord: https://discord.gg/rB8kG7RPmf",
+        FileName = "supersecretwowoworayfieldnice",
+        SaveKey = false,
+        GrabKeyFromSite = true,
+        Key = "https://pastebin.com/raw/U3be7LD8"
+    }
 })
 
 local ESPTab = Window:CreateTab("ESP", 4483362458)
